@@ -189,8 +189,12 @@ static void update_frame(u8      mask[PX_HEIGHT][PX_WIDTH],
     frame->prev = frame->start;
 }
 
-static void debug_frame(Player* player, Frame* frame) {
+static void set_frame(Player* player, Frame* frame) {
     frame->end = SDL_GetTicks();
+    f32 elapsed = (f32)(frame->end - frame->start);
+    if (elapsed < FRAME_DURATION) {
+        SDL_Delay((u32)(FRAME_DURATION - elapsed));
+    }
     if (FRAME_DEBUG_INTERVAL <= ++frame->fps_count) {
         printf("\033[8A"
                "frames  / sec.       :%6.2f\n"
@@ -250,7 +254,7 @@ static void loop(SDL_Renderer* renderer,
             ERROR("SDL_RenderCopy(...) < 0");
         }
         SDL_RenderPresent(renderer);
-        debug_frame(player, frame);
+        set_frame(player, frame);
     }
 }
 
