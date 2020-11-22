@@ -4,19 +4,22 @@
 
 // NOTE: See `https://benedicthenshaw.com/soft_render_sdl2.html`.
 
-#define PIXEL_WIDTH  64
-#define PIXEL_HEIGHT 48
+#define PX_WIDTH  64
+#define PX_HEIGHT 48
 
-#define PIXEL_SCALE 16
+#define PX_SCALE 16
 
-static const u32 WINDOW_WIDTH = PIXEL_WIDTH * PIXEL_SCALE;
-static const u32 WINDOW_HEIGHT = PIXEL_HEIGHT * PIXEL_SCALE;
+static const u32 WINDOW_WIDTH = PX_WIDTH * PX_SCALE;
+static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
 
-static f32 PLAYER_X = PIXEL_WIDTH / 2.0f;
-static f32 PLAYER_Y = PIXEL_HEIGHT / 2.0f;
+static f32 PLAYER_X = PX_WIDTH / 2.0f;
+static f32 PLAYER_Y = PX_HEIGHT / 2.0f;
 
-static const f32 PIXEL_WIDTH_MINUS_1 = PIXEL_WIDTH - 1.0f;
-static const f32 PIXEL_HEIGHT_MINUS_1 = PIXEL_HEIGHT - 1.0f;
+static f32 NEXT_PLAYER_X = PX_WIDTH / 2.0f;
+static f32 NEXT_PLAYER_Y = PX_HEIGHT / 2.0f;
+
+static const f32 PX_WIDTH_MINUS_1 = PX_WIDTH - 1.0f;
+static const f32 PX_HEIGHT_MINUS_1 = PX_HEIGHT - 1.0f;
 
 #define FRAME_UPDATE_COUNT   8
 #define FRAME_DEBUG_INTERVAL 30
@@ -27,7 +30,7 @@ static const f32 FRAME_DURATION = (1.0f / 60.0f) * MILLISECONDS;
 static const u32 FRAME_UPDATE_STEP =
     (u32)(FRAME_DURATION / (f32)FRAME_UPDATE_COUNT);
 
-#define KEY_SENSITIVITY 0.1;
+#define KEY_SENSITIVITY 0.0825;
 
 #define COLOR_BACKGROUND_RED   32
 #define COLOR_BACKGROUND_GREEN 32
@@ -36,6 +39,10 @@ static const u32 FRAME_UPDATE_STEP =
 #define COLOR_PLAYER_RED   220
 #define COLOR_PLAYER_GREEN 60
 #define COLOR_PLAYER_BLUE  80
+
+#define COLOR_WALL_RED   72
+#define COLOR_WALL_GREEN 72
+#define COLOR_WALL_BLUE  72
 
 typedef struct {
     u32 start;
@@ -63,12 +70,42 @@ typedef enum {
 } Input;
 
 typedef struct {
-    Pixel buffer[PIXEL_HEIGHT][PIXEL_WIDTH];
+    Pixel buffer[PX_HEIGHT][PX_WIDTH];
 } Memory;
 
-static f32 clamp_f32(f32 x, f32 min, f32 max) {
-    return x < min ? min : max < x ? max : x;
-}
+typedef struct {
+    u8 x0;
+    u8 x1;
+    u8 y;
+} HorizontalLine;
+
+typedef struct {
+    u8 x;
+    u8 y0;
+    u8 y1;
+} VerticalLine;
+
+static const HorizontalLine HORIZONTAL_LINES[] = {
+    {
+        .x0 = 10,
+        .x1 = 51,
+        .y = 40,
+    },
+};
+
+static const VerticalLine VERTICAL_LINES[] = {
+    {
+        .x = 10,
+        .y0 = 10,
+        .y1 = 40,
+    },
+};
+
+static const u8 HORIZONTAL_LINES_COUNT =
+    (u8)(sizeof(HORIZONTAL_LINES) / sizeof(HORIZONTAL_LINES[0]));
+
+static const u8 VERTICAL_LINES_COUNT =
+    (u8)(sizeof(VERTICAL_LINES) / sizeof(VERTICAL_LINES[0]));
 
 static const Pixel COLOR_BACKGROUND = {
     .red = COLOR_BACKGROUND_RED,
@@ -82,14 +119,34 @@ static const Pixel COLOR_PLAYER = {
     .blue = COLOR_PLAYER_BLUE,
 };
 
-static void set_buffer(Pixel buffer[PIXEL_HEIGHT][PIXEL_WIDTH]) {
-    for (u32 i = 0; i < PIXEL_HEIGHT; ++i) {
-        for (u32 j = 0; j < PIXEL_WIDTH; ++j) {
+static const Pixel COLOR_WALL = {
+    .red = COLOR_WALL_RED,
+    .green = COLOR_WALL_GREEN,
+    .blue = COLOR_WALL_BLUE,
+};
+
+static f32 clamp_f32(f32 x, f32 min, f32 max) {
+    return x < min ? min : max < x ? max : x;
+}
+
+static void set_buffer(Pixel buffer[PX_HEIGHT][PX_WIDTH]) {
+    for (u32 i = 0; i < PX_HEIGHT; ++i) {
+        for (u32 j = 0; j < PX_WIDTH; ++j) {
             buffer[i][j] = COLOR_BACKGROUND;
         }
     }
-    PLAYER_X = clamp_f32(PLAYER_X, 0.0f, PIXEL_WIDTH_MINUS_1);
-    PLAYER_Y = clamp_f32(PLAYER_Y, 0.0f, PIXEL_HEIGHT_MINUS_1);
+    for (u8 i = 0; i < HORIZONTAL_LINES_COUNT; ++i) {
+        HorizontalLine line = HORIZONTAL_LINES[i];
+        for (u8 x = line.x0; x < line.x1; ++x) {
+            buffer[line.y][x] = COLOR_WALL;
+        }
+    }
+    for (u8 i = 0; i < VERTICAL_LINES_COUNT; ++i) {
+        VerticalLine line = VERTICAL_LINES[i];
+        for (u8 y = line.y0; y < line.y1; ++y) {
+            buffer[y][line.x] = COLOR_WALL;
+        }
+    }
     buffer[(u8)PLAYER_Y][(u8)PLAYER_X] = COLOR_PLAYER;
 }
 
@@ -151,21 +208,66 @@ static void set_input(u8* input) {
     }
 }
 
-static void update_frame(Frame* frame, u8 input) {
+static void update_player_position(Pixel buffer[PX_HEIGHT][PX_WIDTH]) {
+    NEXT_PLAYER_X = clamp_f32(NEXT_PLAYER_X, 0.0f, PX_WIDTH_MINUS_1);
+    NEXT_PLAYER_Y = clamp_f32(NEXT_PLAYER_Y, 0.0f, PX_HEIGHT_MINUS_1);
+    {
+        Pixel next_pixel = buffer[(u8)NEXT_PLAYER_Y][(u8)NEXT_PLAYER_X];
+        if ((next_pixel.red != COLOR_WALL.red) ||
+            (next_pixel.green != COLOR_WALL.green) ||
+            (next_pixel.blue != COLOR_WALL.blue))
+        {
+            PLAYER_X = NEXT_PLAYER_X;
+            PLAYER_Y = NEXT_PLAYER_Y;
+            return;
+        }
+    }
+    // NOTE: Not the best solution. Would be nicer to simply prevent player
+    // from being able to move diagonally.
+    {
+        Pixel next_pixel = buffer[(u8)PLAYER_Y][(u8)NEXT_PLAYER_X];
+        if ((next_pixel.red != COLOR_WALL.red) ||
+            (next_pixel.green != COLOR_WALL.green) ||
+            (next_pixel.blue != COLOR_WALL.blue))
+        {
+            PLAYER_X = NEXT_PLAYER_X;
+            NEXT_PLAYER_Y = PLAYER_Y;
+            return;
+        }
+    }
+    {
+        Pixel next_pixel = buffer[(u8)NEXT_PLAYER_Y][(u8)PLAYER_X];
+        if ((next_pixel.red != COLOR_WALL.red) ||
+            (next_pixel.green != COLOR_WALL.green) ||
+            (next_pixel.blue != COLOR_WALL.blue))
+        {
+            NEXT_PLAYER_X = PLAYER_X;
+            PLAYER_Y = NEXT_PLAYER_Y;
+            return;
+        }
+    }
+    NEXT_PLAYER_X = PLAYER_X;
+    NEXT_PLAYER_Y = PLAYER_Y;
+}
+
+static void update_frame(Frame* frame,
+                         u8     input,
+                         Pixel  buffer[PX_HEIGHT][PX_WIDTH]) {
     frame->delta += frame->start - frame->prev;
     while (FRAME_UPDATE_STEP < frame->delta) {
         if (input & INPUT_UP) {
-            PLAYER_Y -= KEY_SENSITIVITY;
+            NEXT_PLAYER_Y -= KEY_SENSITIVITY;
         }
         if (input & INPUT_DOWN) {
-            PLAYER_Y += KEY_SENSITIVITY;
+            NEXT_PLAYER_Y += KEY_SENSITIVITY;
         }
         if (input & INPUT_LEFT) {
-            PLAYER_X -= KEY_SENSITIVITY;
+            NEXT_PLAYER_X -= KEY_SENSITIVITY;
         }
         if (input & INPUT_RIGHT) {
-            PLAYER_X += KEY_SENSITIVITY;
+            NEXT_PLAYER_X += KEY_SENSITIVITY;
         }
+        update_player_position(buffer);
         frame->delta -= FRAME_UPDATE_STEP;
         ++frame->update_count;
     }
@@ -187,11 +289,11 @@ static void debug_frame(Frame* frame) {
     }
 }
 
-static const u32 TEXTURE_WIDTH = PIXEL_WIDTH * sizeof(Pixel);
+static const u32 TEXTURE_WIDTH = PX_WIDTH * sizeof(Pixel);
 
 static void loop(SDL_Renderer* renderer,
                  SDL_Texture*  texture,
-                 Pixel         buffer[PIXEL_HEIGHT][PIXEL_WIDTH]) {
+                 Pixel         buffer[PX_HEIGHT][PX_WIDTH]) {
     Frame frame = {0};
     u8    input = 0;
     printf("\n\n");
@@ -201,7 +303,7 @@ static void loop(SDL_Renderer* renderer,
         if (input & INPUT_DEAD) {
             return;
         }
-        update_frame(&frame, input);
+        update_frame(&frame, input, buffer);
         set_buffer(buffer);
         {
             if (SDL_RenderClear(renderer) < 0) {
@@ -249,8 +351,8 @@ i32 main(void) {
     if (!renderer) {
         ERROR("!renderer");
     }
-    SDL_SetWindowMinimumSize(window, PIXEL_WIDTH, PIXEL_HEIGHT);
-    if (SDL_RenderSetLogicalSize(renderer, PIXEL_WIDTH, PIXEL_HEIGHT) < 0) {
+    SDL_SetWindowMinimumSize(window, PX_WIDTH, PX_HEIGHT);
+    if (SDL_RenderSetLogicalSize(renderer, PX_WIDTH, PX_HEIGHT) < 0) {
         ERROR("SDL_RenderSetLogicalSize(...) < 0");
     }
     if (SDL_RenderSetIntegerScale(renderer, 1) < 0) {
@@ -259,8 +361,8 @@ i32 main(void) {
     SDL_Texture* texture = SDL_CreateTexture(renderer,
                                              SDL_PIXELFORMAT_BGR888,
                                              SDL_TEXTUREACCESS_STREAMING,
-                                             PIXEL_WIDTH,
-                                             PIXEL_HEIGHT);
+                                             PX_WIDTH,
+                                             PX_HEIGHT);
     if (!texture) {
         ERROR("!texture");
     }
