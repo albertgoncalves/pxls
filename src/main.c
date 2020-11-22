@@ -101,8 +101,8 @@ static void set_input(Player* player, Bool* dead) {
 }
 
 static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
-    for (u32 i = 0; i < PX_HEIGHT; ++i) {
-        for (u32 j = 0; j < PX_WIDTH; ++j) {
+    for (u8 i = 0; i < PX_HEIGHT; ++i) {
+        for (u8 j = 0; j < PX_WIDTH; ++j) {
             mask[i][j] &= (u8)(~MASK_VISIBLE);
         }
     }
