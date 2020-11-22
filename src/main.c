@@ -1,7 +1,6 @@
 #include "color.h"
 #include "geom.h"
 #include "player.h"
-#include "shadow.h"
 
 #include <SDL2/SDL.h>
 
@@ -17,7 +16,7 @@ typedef struct {
 
 typedef struct {
     Pixel  buffer[PX_HEIGHT][PX_WIDTH];
-    Mask   mask[PX_HEIGHT][PX_WIDTH];
+    u8     mask[PX_HEIGHT][PX_WIDTH];
     Player player;
     Frame  frame;
     Bool   dead;
@@ -101,28 +100,58 @@ static void set_input(Player* player, Bool* dead) {
     }
 }
 
+static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
+    for (u32 i = 0; i < PX_HEIGHT; ++i) {
+        for (u32 j = 0; j < PX_WIDTH; ++j) {
+            mask[i][j] &= (u8)(~MASK_VISIBLE);
+        }
+    }
+    i16 x = (i16)player->x;
+    i16 y = (i16)player->y;
+    mask[y][x] &= MASK_VISIBLE;
+    Octal octal = {
+        .slope_start = 1.0f,
+        .slope_end = 0.0f,
+        .loop_start = 1,
+    };
+    {
+        octal.x_sign = 1;
+        octal.y_sign = 1;
+        set_mask_col_row(mask, octal, x, y);
+        set_mask_row_col(mask, octal, x, y);
+    }
+    {
+        octal.x_sign = 1;
+        octal.y_sign = -1;
+        set_mask_col_row(mask, octal, x, y);
+        set_mask_row_col(mask, octal, x, y);
+    }
+    {
+        octal.x_sign = -1;
+        octal.y_sign = -1;
+        set_mask_col_row(mask, octal, x, y);
+        set_mask_row_col(mask, octal, x, y);
+    }
+    {
+        octal.x_sign = -1;
+        octal.y_sign = 1;
+        set_mask_col_row(mask, octal, x, y);
+        set_mask_row_col(mask, octal, x, y);
+    }
+}
+
 static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
-                       Mask    mask[PX_HEIGHT][PX_WIDTH],
+                       u8      mask[PX_HEIGHT][PX_WIDTH],
                        Player* player) {
     for (u32 i = 0; i < PX_HEIGHT; ++i) {
         for (u32 j = 0; j < PX_WIDTH; ++j) {
-            if (mask[i][j] == MASK_SHADOW) {
-                buffer[i][j].pack = COLOR_SHADOW.pack;
+            if ((mask[i][j] & MASK_WALL) && (mask[i][j] & MASK_VISIBLE)) {
+                buffer[i][j].pack = COLOR_WALL.pack;
+            } else if (mask[i][j] & MASK_VISIBLE) {
+                buffer[i][j].pack = COLOR_VISIBLE.pack;
             } else {
-                buffer[i][j].pack = COLOR_EMPTY.pack;
+                buffer[i][j].pack = COLOR_SHADOW.pack;
             }
-        }
-    }
-    for (u8 i = 0; i < HORIZONTAL_LINES_COUNT; ++i) {
-        HorizontalLine line = HORIZONTAL_LINES[i];
-        for (u8 x = line.x0; x < line.x1; ++x) {
-            buffer[line.y][x].pack = COLOR_WALL.pack;
-        }
-    }
-    for (u8 i = 0; i < VERTICAL_LINES_COUNT; ++i) {
-        VerticalLine line = VERTICAL_LINES[i];
-        for (u8 y = line.y0; y < line.y1; ++y) {
-            buffer[y][line.x].pack = COLOR_WALL.pack;
         }
     }
     buffer[(u8)player->y][(u8)player->x].pack = COLOR_PLAYER.pack;
@@ -131,30 +160,29 @@ static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
 static const f32 PX_WIDTH_MINUS_1 = PX_WIDTH - 1.0f;
 static const f32 PX_HEIGHT_MINUS_1 = PX_HEIGHT - 1.0f;
 
-static void update_player_position(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
+static void update_player_position(u8      mask[PX_HEIGHT][PX_WIDTH],
                                    Player* player) {
     player->next_x = clamp_f32(player->next_x, 0.0f, PX_WIDTH_MINUS_1);
     player->next_y = clamp_f32(player->next_y, 0.0f, PX_HEIGHT_MINUS_1);
-    Pixel next_pixel = buffer[(u8)player->next_y][(u8)player->next_x];
-    if (next_pixel.pack != COLOR_WALL.pack) {
+    if (mask[(u8)player->next_y][(u8)player->next_x] & MASK_WALL) {
+        player->next_x = player->x;
+        player->next_y = player->y;
+    } else {
         player->x = player->next_x;
         player->y = player->next_y;
-        return;
     }
-    player->next_x = player->x;
-    player->next_y = player->y;
 }
 
 static const u32 FRAME_UPDATE_STEP =
     (u32)(FRAME_DURATION / (f32)FRAME_UPDATE_COUNT);
 
-static void update_frame(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
+static void update_frame(u8      mask[PX_HEIGHT][PX_WIDTH],
                          Player* player,
                          Frame*  frame) {
     frame->delta += frame->start - frame->prev;
     while (FRAME_UPDATE_STEP < frame->delta) {
         set_player(player);
-        update_player_position(buffer, player);
+        update_player_position(mask, player);
         frame->delta -= FRAME_UPDATE_STEP;
         ++frame->update_count;
     }
@@ -201,6 +229,7 @@ static void loop(SDL_Renderer* renderer,
     Frame* frame = &memory->frame;
     Bool*  dead = &memory->dead;
     Pixel* pointer = &memory->buffer[0][0];
+    init_mask(memory->mask);
     printf("\n\n\n\n\n\n\n\n");
     for (;;) {
         frame->start = SDL_GetTicks();
@@ -208,7 +237,8 @@ static void loop(SDL_Renderer* renderer,
         if (memory->dead) {
             return;
         }
-        update_frame(memory->buffer, player, frame);
+        update_frame(memory->mask, player, frame);
+        set_mask(memory->mask, player);
         set_buffer(memory->buffer, memory->mask, player);
         if (SDL_RenderClear(renderer) < 0) {
             ERROR("SDL_RenderClear(...) < 0");
@@ -231,6 +261,7 @@ i32 main(void) {
            "sizeof(Player)         : %zu\n"
            "sizeof(HorizontalLine) : %zu\n"
            "sizeof(VerticalLine)   : %zu\n"
+           "sizeof(Octal)          : %zu\n"
            "sizeof(Memory)         : %zu\n\n",
            sizeof(Frame),
            sizeof(Rgb),
@@ -238,6 +269,7 @@ i32 main(void) {
            sizeof(Player),
            sizeof(HorizontalLine),
            sizeof(VerticalLine),
+           sizeof(Octal),
            sizeof(Memory));
     Memory* memory = calloc(1, sizeof(Memory));
     if (!memory) {
