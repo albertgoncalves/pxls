@@ -42,8 +42,8 @@ typedef struct {
     u32 end;
     u32 prev;
     u32 delta;
-    u8  update_count;
     u32 fps_start;
+    u16 update_count;
     u8  fps_count;
 } Frame;
 
@@ -174,10 +174,10 @@ static void update_frame(Frame* frame, u8 input) {
 
 static void debug_frame(Frame* frame) {
     frame->end = SDL_GetTicks();
-    if (++frame->fps_count == FRAME_DEBUG_INTERVAL) {
+    if (FRAME_DEBUG_INTERVAL <= ++frame->fps_count) {
         printf("\033[2A"
-               "fps     :%6.2f\n"
-               "updates :%6.2f\n",
+               "frames  / sec.  :%6.2f\n"
+               "updates / frame :%6.2f\n",
                (f32)frame->fps_count / (f32)(frame->end - frame->fps_start) *
                    MILLISECONDS,
                (f32)frame->update_count / (f32)FRAME_DEBUG_INTERVAL);
