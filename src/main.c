@@ -4,10 +4,10 @@
 
 // NOTE: See `https://benedicthenshaw.com/soft_render_sdl2.html`.
 
-#define PX_WIDTH  64
-#define PX_HEIGHT 48
+#define PX_WIDTH  32
+#define PX_HEIGHT 32
 
-#define PX_SCALE 16
+#define PX_SCALE 32
 
 static const u32 WINDOW_WIDTH = PX_WIDTH * PX_SCALE;
 static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
@@ -101,17 +101,117 @@ typedef struct {
 
 static const HorizontalLine HORIZONTAL_LINES[] = {
     {
-        .x0 = 10,
-        .x1 = 51,
-        .y = 40,
+        .x0 = 0,
+        .x1 = 1,
+        .y = 8,
+    },
+    {
+        .x0 = 5,
+        .x1 = 17,
+        .y = 8,
+    },
+    {
+        .x0 = 22,
+        .x1 = 24,
+        .y = 8,
+    },
+    {
+        .x0 = 25,
+        .x1 = 27,
+        .y = 8,
+    },
+    {
+        .x0 = 31,
+        .x1 = 32,
+        .y = 8,
+    },
+    {
+        .x0 = 6,
+        .x1 = 15,
+        .y = 14,
+    },
+    {
+        .x0 = 0,
+        .x1 = 1,
+        .y = 24,
+    },
+    {
+        .x0 = 5,
+        .x1 = 16,
+        .y = 24,
+    },
+    {
+        .x0 = 25,
+        .x1 = 27,
+        .y = 24,
+    },
+    {
+        .x0 = 31,
+        .x1 = 32,
+        .y = 24,
+    },
+    {
+        .x0 = 15,
+        .x1 = 17,
+        .y = 20,
+    },
+    {
+        .x0 = 22,
+        .x1 = 25,
+        .y = 20,
     },
 };
 
 static const VerticalLine VERTICAL_LINES[] = {
     {
-        .x = 10,
-        .y0 = 10,
-        .y1 = 40,
+        .x = 6,
+        .y0 = 0,
+        .y1 = 1,
+    },
+    {
+        .x = 6,
+        .y0 = 6,
+        .y1 = 8,
+    },
+    {
+        .x = 24,
+        .y0 = 0,
+        .y1 = 1,
+    },
+    {
+        .x = 24,
+        .y0 = 6,
+        .y1 = 16,
+    },
+    {
+        .x = 24,
+        .y0 = 21,
+        .y1 = 32,
+    },
+    {
+        .x = 6,
+        .y0 = 9,
+        .y1 = 14,
+    },
+    {
+        .x = 14,
+        .y0 = 9,
+        .y1 = 14,
+    },
+    {
+        .x = 6,
+        .y0 = 25,
+        .y1 = 32,
+    },
+    {
+        .x = 15,
+        .y0 = 21,
+        .y1 = 27,
+    },
+    {
+        .x = 15,
+        .y0 = 31,
+        .y1 = 32,
     },
 };
 
