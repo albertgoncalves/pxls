@@ -112,31 +112,33 @@ static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
     Octal octal = {
         .slope_start = 1.0f,
         .slope_end = 0.0f,
+        .x = x,
+        .y = y,
         .loop_start = 1,
     };
     {
         octal.x_sign = 1;
         octal.y_sign = 1;
-        set_mask_col_row(mask, octal, x, y);
-        set_mask_row_col(mask, octal, x, y);
+        set_mask_col_row(mask, octal);
+        set_mask_row_col(mask, octal);
     }
     {
         octal.x_sign = 1;
         octal.y_sign = -1;
-        set_mask_col_row(mask, octal, x, y);
-        set_mask_row_col(mask, octal, x, y);
+        set_mask_col_row(mask, octal);
+        set_mask_row_col(mask, octal);
     }
     {
         octal.x_sign = -1;
         octal.y_sign = -1;
-        set_mask_col_row(mask, octal, x, y);
-        set_mask_row_col(mask, octal, x, y);
+        set_mask_col_row(mask, octal);
+        set_mask_row_col(mask, octal);
     }
     {
         octal.x_sign = -1;
         octal.y_sign = 1;
-        set_mask_col_row(mask, octal, x, y);
-        set_mask_row_col(mask, octal, x, y);
+        set_mask_col_row(mask, octal);
+        set_mask_row_col(mask, octal);
     }
 }
 
