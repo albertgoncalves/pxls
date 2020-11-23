@@ -192,17 +192,18 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
             if (r_slope < octal.slope_end) {
                 break;
             }
-            i16 x_delta = (i16)(j * octal.x_sign);
-            i16 x = (i16)(octal.x + x_delta);
-            if ((((x_delta * x_delta) + y_delta_squared) <
-                 SHADOW_RADIUS_SQUARED) &&
-                (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT))
+            i16  x_delta = (i16)(j * octal.x_sign);
+            i16  x = (i16)(octal.x + x_delta);
+            Bool in_bounds =
+                (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT);
+            if (in_bounds &&
+                (((x_delta * x_delta) + y_delta_squared) <
+                 SHADOW_RADIUS_SQUARED))
             {
                 mask[y][x] |= MASK_VISIBLE;
                 visible = TRUE;
             }
-            Bool blocked = (x < 0) || (y < 0) || (PX_WIDTH <= x) ||
-                           (PX_HEIGHT <= y) || (mask[y][x] & MASK_WALL);
+            Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
             if (prev_blocked && blocked) {
                 next_start = l_slope;
                 continue;
@@ -250,17 +251,18 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
             if (r_slope < octal.slope_end) {
                 break;
             }
-            i16 y_delta = (i16)(i * octal.y_sign);
-            i16 y = (i16)(octal.y + y_delta);
-            if (((x_delta_squared + (y_delta * y_delta)) <
-                 SHADOW_RADIUS_SQUARED) &&
-                (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT))
+            i16  y_delta = (i16)(i * octal.y_sign);
+            i16  y = (i16)(octal.y + y_delta);
+            Bool in_bounds =
+                (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT);
+            if (in_bounds &&
+                ((x_delta_squared + (y_delta * y_delta)) <
+                 SHADOW_RADIUS_SQUARED))
             {
                 mask[y][x] |= MASK_VISIBLE;
                 visible = TRUE;
             }
-            Bool blocked = (x < 0) || (y < 0) || (PX_WIDTH <= x) ||
-                           (PX_HEIGHT <= y) || (mask[y][x] & MASK_WALL);
+            Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
             if (prev_blocked && blocked) {
                 next_start = l_slope;
                 continue;
