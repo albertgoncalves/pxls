@@ -203,14 +203,12 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
             }
             Bool blocked = (x < 0) || (y < 0) || (PX_WIDTH <= x) ||
                            (PX_HEIGHT <= y) || (mask[y][x] & MASK_WALL);
-            if (prev_blocked) {
-                if (blocked) {
-                    next_start = l_slope;
-                    continue;
-                } else {
-                    prev_blocked = FALSE;
-                    octal.slope_start = next_start;
-                }
+            if (prev_blocked && blocked) {
+                next_start = l_slope;
+                continue;
+            } else if (prev_blocked) {
+                prev_blocked = FALSE;
+                octal.slope_start = next_start;
             } else if (blocked && (i < SHADOW_RADIUS)) {
                 {
                     Octal next_octal;
@@ -263,14 +261,12 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
             }
             Bool blocked = (x < 0) || (y < 0) || (PX_WIDTH <= x) ||
                            (PX_HEIGHT <= y) || (mask[y][x] & MASK_WALL);
-            if (prev_blocked) {
-                if (blocked) {
-                    next_start = l_slope;
-                    continue;
-                } else {
-                    prev_blocked = FALSE;
-                    octal.slope_start = next_start;
-                }
+            if (prev_blocked && blocked) {
+                next_start = l_slope;
+                continue;
+            } else if (prev_blocked) {
+                prev_blocked = FALSE;
+                octal.slope_start = next_start;
             } else if (blocked && (j < SHADOW_RADIUS)) {
                 {
                     Octal next_octal;
