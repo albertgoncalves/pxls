@@ -51,19 +51,23 @@ static void set_input(Player* player, Bool* dead) {
                 *dead = TRUE;
                 return;
             }
-            case SDLK_w: {
+            case SDLK_w:
+            case SDLK_i: {
                 player->control[DIR_UP] = ++player->control_counter;
                 break;
             }
-            case SDLK_s: {
+            case SDLK_s:
+            case SDLK_k: {
                 player->control[DIR_DOWN] = ++player->control_counter;
                 break;
             }
-            case SDLK_a: {
+            case SDLK_a:
+            case SDLK_j: {
                 player->control[DIR_LEFT] = ++player->control_counter;
                 break;
             }
-            case SDLK_d: {
+            case SDLK_d:
+            case SDLK_l: {
                 player->control[DIR_RIGHT] = ++player->control_counter;
                 break;
             }
@@ -72,19 +76,23 @@ static void set_input(Player* player, Bool* dead) {
         }
         case SDL_KEYUP: {
             switch (event.key.keysym.sym) {
-            case SDLK_w: {
+            case SDLK_w:
+            case SDLK_i: {
                 player->control[DIR_UP] = 0;
                 break;
             }
-            case SDLK_s: {
+            case SDLK_s:
+            case SDLK_k: {
                 player->control[DIR_DOWN] = 0;
                 break;
             }
-            case SDLK_a: {
+            case SDLK_a:
+            case SDLK_j: {
                 player->control[DIR_LEFT] = 0;
                 break;
             }
-            case SDLK_d: {
+            case SDLK_d:
+            case SDLK_l: {
                 player->control[DIR_RIGHT] = 0;
                 break;
             }
