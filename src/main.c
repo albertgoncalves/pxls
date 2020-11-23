@@ -149,10 +149,12 @@ static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
         for (u32 j = 0; j < PX_WIDTH; ++j) {
             if ((mask[i][j] & MASK_WALL) && (mask[i][j] & MASK_VISIBLE)) {
                 buffer[i][j].pack = COLOR_WALL.pack;
+            } else if (mask[i][j] & MASK_WALL) {
+                buffer[i][j].pack = COLOR_WALL_SHADOW.pack;
             } else if (mask[i][j] & MASK_VISIBLE) {
-                buffer[i][j].pack = COLOR_VISIBLE.pack;
+                buffer[i][j].pack = COLOR_EMPTY.pack;
             } else {
-                buffer[i][j].pack = COLOR_SHADOW.pack;
+                buffer[i][j].pack = COLOR_EMPTY_SHADOW.pack;
             }
         }
     }
