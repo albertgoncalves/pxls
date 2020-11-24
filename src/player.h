@@ -36,7 +36,7 @@ static Direction get_direction(Player* player) {
     return direction;
 }
 
-static void set_player(Player* player) {
+static void set_player_next_xy(Player* player) {
     switch (get_direction(player)) {
     case DIR_UP: {
         player->next_y -= KEY_SENSITIVITY;

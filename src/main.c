@@ -225,7 +225,7 @@ static void update_frame(u8      mask[PX_HEIGHT][PX_WIDTH],
                          Frame*  frame) {
     frame->delta += frame->start - frame->prev;
     while (FRAME_UPDATE_STEP < frame->delta) {
-        set_player(player);
+        set_player_next_xy(player);
         update_player_position(mask, player);
         frame->delta -= FRAME_UPDATE_STEP;
         ++frame->update_count;
