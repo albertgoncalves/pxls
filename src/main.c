@@ -24,9 +24,6 @@ typedef struct {
     Bool   dead;
 } Memory;
 
-static const u32 WINDOW_WIDTH = PX_WIDTH * PX_SCALE;
-static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
-
 #define PLAYER_SHADOW_RADIUS 32
 
 #define FRAME_UPDATE_COUNT   8
@@ -282,6 +279,9 @@ static void loop(SDL_Renderer* renderer,
         set_debug(player, frame);
     }
 }
+
+static const u32 WINDOW_WIDTH = PX_WIDTH * PX_SCALE;
+static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
 
 i32 main(void) {
     printf("sizeof(Frame)          : %zu\n"
