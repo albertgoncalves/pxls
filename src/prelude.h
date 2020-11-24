@@ -35,6 +35,8 @@ typedef enum {
 
 #define PX_SCALE 24
 
+static const u16 PX_WIDTH_BY_HEIGHT = PX_WIDTH * PX_HEIGHT;
+
 static f32 clamp_f32(f32 x, f32 min, f32 max) {
     return x < min ? min : max < x ? max : x;
 }

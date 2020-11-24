@@ -3,6 +3,9 @@
 #include "player.h"
 
 #include <SDL2/SDL.h>
+#include <immintrin.h>
+
+typedef __m128i Simd4i32;
 
 typedef struct {
     u32 start;
@@ -33,6 +36,8 @@ static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
 #define MILLISECONDS 1000.0f
 
 static const f32 FRAME_DURATION = (1.0f / 60.0f) * MILLISECONDS;
+
+#define PLAYER_SHADOW_RADIUS 32
 
 static void set_input(Player* player, Bool* dead) {
     SDL_Event event;
@@ -108,21 +113,50 @@ static void set_input(Player* player, Bool* dead) {
     }
 }
 
+static const i16 PLAYER_SHADOW_RADIUS_SQUARED =
+    PLAYER_SHADOW_RADIUS * PLAYER_SHADOW_RADIUS;
+
+static u8 MASK_RESET[16] = {
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+    (u8)~MASK_PLAYER,
+};
+
 static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
-    for (u8 i = 0; i < PX_HEIGHT; ++i) {
-        for (u8 j = 0; j < PX_WIDTH; ++j) {
-            mask[i][j] &= (u8)(~MASK_VISIBLE);
+    {
+        // NOTE: `PX_WIDTH_BY_HEIGHT` needs to be divisible by 16.
+        u8* pointer = &mask[0][0];
+        for (u16 i = 0; i < PX_WIDTH_BY_HEIGHT; i = (u16)(i + 16)) {
+            _mm_store_si128((Simd4i32*)&pointer[i],
+                            _mm_and_si128(*(Simd4i32*)&pointer[i],
+                                          *(Simd4i32*)&MASK_RESET[0]));
         }
     }
     i16 x = (i16)player->x;
     i16 y = (i16)player->y;
-    mask[y][x] &= MASK_VISIBLE;
+    mask[y][x] &= MASK_PLAYER;
     Octal octal = {
         .slope_start = 1.0f,
         .slope_end = 0.0f,
         .x = x,
         .y = y,
         .loop_start = 1,
+        .radius = PLAYER_SHADOW_RADIUS,
+        .radius_squared = PLAYER_SHADOW_RADIUS_SQUARED,
+        .mask = MASK_PLAYER,
     };
     {
         octal.x_sign = 1;
@@ -155,11 +189,11 @@ static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
                        Player* player) {
     for (u32 i = 0; i < PX_HEIGHT; ++i) {
         for (u32 j = 0; j < PX_WIDTH; ++j) {
-            if ((mask[i][j] & MASK_WALL) && (mask[i][j] & MASK_VISIBLE)) {
+            if ((mask[i][j] & MASK_WALL) && (mask[i][j] & MASK_PLAYER)) {
                 buffer[i][j].pack = COLOR_WALL.pack;
             } else if (mask[i][j] & MASK_WALL) {
                 buffer[i][j].pack = COLOR_WALL_SHADOW.pack;
-            } else if (mask[i][j] & MASK_VISIBLE) {
+            } else if (mask[i][j] & MASK_PLAYER) {
                 buffer[i][j].pack = COLOR_EMPTY.pack;
             } else {
                 buffer[i][j].pack = COLOR_EMPTY_SHADOW.pack;

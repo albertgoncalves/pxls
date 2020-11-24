@@ -4,11 +4,10 @@
 #include "prelude.h"
 
 #define SHADOW_APERTURE 0.5f
-#define SHADOW_RADIUS   32
 
 typedef enum {
     MASK_WALL = 1 << 0,
-    MASK_VISIBLE = 1 << 1,
+    MASK_PLAYER = 1 << 1,
 } Mask;
 
 typedef struct {
@@ -24,13 +23,16 @@ typedef struct {
 } VerticalLine;
 
 typedef struct {
-    f32 slope_start;
-    f32 slope_end;
-    i16 x;
-    i16 y;
-    i16 loop_start;
-    i8  x_sign;
-    i8  y_sign;
+    f32  slope_start;
+    f32  slope_end;
+    i16  x;
+    i16  y;
+    i16  loop_start;
+    i16  radius;
+    i16  radius_squared;
+    i8   x_sign;
+    i8   y_sign;
+    Mask mask;
 } Octal;
 
 static const HorizontalLine HORIZONTAL_LINES[] = {
@@ -170,14 +172,12 @@ static void init_mask(u8 mask[PX_HEIGHT][PX_WIDTH]) {
     }
 }
 
-static const i16 SHADOW_RADIUS_SQUARED = SHADOW_RADIUS * SHADOW_RADIUS;
-
 static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
     if (octal.slope_start < octal.slope_end) {
         return;
     }
     f32 next_start = octal.slope_start;
-    for (i16 i = octal.loop_start; i <= SHADOW_RADIUS; ++i) {
+    for (i16 i = octal.loop_start; i <= octal.radius; ++i) {
         Bool prev_blocked = FALSE;
         Bool visible = FALSE;
         i16  y_delta = (i16)(i * octal.y_sign);
@@ -198,9 +198,9 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
                 (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT);
             if (in_bounds &&
                 (((x_delta * x_delta) + y_delta_squared) <
-                 SHADOW_RADIUS_SQUARED))
+                 octal.radius_squared))
             {
-                mask[y][x] |= MASK_VISIBLE;
+                mask[y][x] |= (u8)octal.mask;
                 visible = TRUE;
             }
             Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
@@ -210,15 +210,19 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
             } else if (prev_blocked) {
                 prev_blocked = FALSE;
                 octal.slope_start = next_start;
-            } else if (blocked && (i < SHADOW_RADIUS)) {
+            } else if (blocked && (i < octal.radius)) {
                 {
                     Octal next_octal;
                     next_octal.slope_start = next_start;
                     next_octal.slope_end = r_slope;
+                    next_octal.x = octal.x;
+                    next_octal.y = octal.y;
                     next_octal.loop_start = (i16)(i + 1);
-                    next_octal.x = octal.x, next_octal.y = octal.y,
+                    next_octal.radius = octal.radius;
+                    next_octal.radius_squared = octal.radius_squared;
                     next_octal.x_sign = octal.x_sign;
                     next_octal.y_sign = octal.y_sign;
+                    next_octal.mask = octal.mask;
                     set_mask_col_row(mask, next_octal);
                 }
                 prev_blocked = TRUE;
@@ -236,7 +240,7 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
         return;
     }
     f32 next_start = octal.slope_start;
-    for (i16 j = octal.loop_start; j <= SHADOW_RADIUS; ++j) {
+    for (i16 j = octal.loop_start; j <= octal.radius; ++j) {
         Bool prev_blocked = FALSE;
         Bool visible = FALSE;
         i16  x_delta = (i16)(j * octal.x_sign);
@@ -257,9 +261,9 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
                 (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT);
             if (in_bounds &&
                 ((x_delta_squared + (y_delta * y_delta)) <
-                 SHADOW_RADIUS_SQUARED))
+                 octal.radius_squared))
             {
-                mask[y][x] |= MASK_VISIBLE;
+                mask[y][x] |= (u8)octal.mask;
                 visible = TRUE;
             }
             Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
@@ -269,15 +273,19 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
             } else if (prev_blocked) {
                 prev_blocked = FALSE;
                 octal.slope_start = next_start;
-            } else if (blocked && (j < SHADOW_RADIUS)) {
+            } else if (blocked && (j < octal.radius)) {
                 {
                     Octal next_octal;
                     next_octal.slope_start = next_start;
                     next_octal.slope_end = r_slope;
+                    next_octal.x = octal.x;
+                    next_octal.y = octal.y;
                     next_octal.loop_start = (i16)(j + 1);
-                    next_octal.x = octal.x, next_octal.y = octal.y,
+                    next_octal.radius = octal.radius;
+                    next_octal.radius_squared = octal.radius_squared;
                     next_octal.x_sign = octal.x_sign;
                     next_octal.y_sign = octal.y_sign;
+                    next_octal.mask = octal.mask;
                     set_mask_row_col(mask, next_octal);
                 }
                 prev_blocked = TRUE;
