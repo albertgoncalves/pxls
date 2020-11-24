@@ -1,6 +1,7 @@
 #ifndef __PRELUDE_H__
 #define __PRELUDE_H__
 
+#include <immintrin.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -14,6 +15,8 @@ typedef int16_t i16;
 typedef int32_t i32;
 
 typedef float f32;
+
+typedef __m128i Simd4i32;
 
 typedef enum {
     FALSE = 0,

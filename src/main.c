@@ -3,9 +3,8 @@
 #include "player.h"
 
 #include <SDL2/SDL.h>
-#include <immintrin.h>
 
-typedef __m128i Simd4i32;
+// NOTE: See `https://benedicthenshaw.com/soft_render_sdl2.html`.
 
 typedef struct {
     u32 start;
@@ -25,10 +24,10 @@ typedef struct {
     Bool   dead;
 } Memory;
 
-// NOTE: See `https://benedicthenshaw.com/soft_render_sdl2.html`.
-
 static const u32 WINDOW_WIDTH = PX_WIDTH * PX_SCALE;
 static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
+
+#define PLAYER_SHADOW_RADIUS 32
 
 #define FRAME_UPDATE_COUNT   8
 #define FRAME_DEBUG_INTERVAL 30
@@ -36,8 +35,6 @@ static const u32 WINDOW_HEIGHT = PX_HEIGHT * PX_SCALE;
 #define MILLISECONDS 1000.0f
 
 static const f32 FRAME_DURATION = (1.0f / 60.0f) * MILLISECONDS;
-
-#define PLAYER_SHADOW_RADIUS 32
 
 static void set_input(Player* player, Bool* dead) {
     SDL_Event event;
@@ -111,8 +108,21 @@ static void set_input(Player* player, Bool* dead) {
     }
 }
 
-static const i16 PLAYER_SHADOW_RADIUS_SQUARED =
-    PLAYER_SHADOW_RADIUS * PLAYER_SHADOW_RADIUS;
+static const u32 FRAME_UPDATE_STEP =
+    (u32)(FRAME_DURATION / (f32)FRAME_UPDATE_COUNT);
+
+static void update_frame(u8      mask[PX_HEIGHT][PX_WIDTH],
+                         Player* player,
+                         Frame*  frame) {
+    frame->delta += frame->start - frame->prev;
+    while (FRAME_UPDATE_STEP < frame->delta) {
+        set_player_next_xy(player);
+        update_player_position(mask, player);
+        frame->delta -= FRAME_UPDATE_STEP;
+        ++frame->update_count;
+    }
+    frame->prev = frame->start;
+}
 
 static u8 MASK_RESET[16] = {
     (u8)~MASK_PLAYER,
@@ -133,9 +143,12 @@ static u8 MASK_RESET[16] = {
     (u8)~MASK_PLAYER,
 };
 
+static const i16 PLAYER_SHADOW_RADIUS_SQUARED =
+    PLAYER_SHADOW_RADIUS * PLAYER_SHADOW_RADIUS;
+
 static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
     {
-        // NOTE: `PX_WIDTH_BY_HEIGHT` needs to be divisible by 16.
+        // NOTE: `PX_WIDTH_BY_HEIGHT` *must* to be divisible by 16.
         u8* pointer = &mask[0][0];
         for (u16 i = 0; i < PX_WIDTH_BY_HEIGHT; i = (u16)(i + 16)) {
             _mm_store_si128((Simd4i32*)&pointer[i],
@@ -201,39 +214,7 @@ static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
     buffer[(u8)player->y][(u8)player->x].pack = COLOR_PLAYER.pack;
 }
 
-static const f32 PX_WIDTH_MINUS_1 = PX_WIDTH - 1.0f;
-static const f32 PX_HEIGHT_MINUS_1 = PX_HEIGHT - 1.0f;
-
-static void update_player_position(u8      mask[PX_HEIGHT][PX_WIDTH],
-                                   Player* player) {
-    player->next_x = clamp_f32(player->next_x, 0.0f, PX_WIDTH_MINUS_1);
-    player->next_y = clamp_f32(player->next_y, 0.0f, PX_HEIGHT_MINUS_1);
-    if (mask[(u8)player->next_y][(u8)player->next_x] & MASK_WALL) {
-        player->next_x = player->x;
-        player->next_y = player->y;
-    } else {
-        player->x = player->next_x;
-        player->y = player->next_y;
-    }
-}
-
-static const u32 FRAME_UPDATE_STEP =
-    (u32)(FRAME_DURATION / (f32)FRAME_UPDATE_COUNT);
-
-static void update_frame(u8      mask[PX_HEIGHT][PX_WIDTH],
-                         Player* player,
-                         Frame*  frame) {
-    frame->delta += frame->start - frame->prev;
-    while (FRAME_UPDATE_STEP < frame->delta) {
-        set_player_next_xy(player);
-        update_player_position(mask, player);
-        frame->delta -= FRAME_UPDATE_STEP;
-        ++frame->update_count;
-    }
-    frame->prev = frame->start;
-}
-
-static void set_frame(Player* player, Frame* frame) {
+static void set_debug(Player* player, Frame* frame) {
     frame->end = SDL_GetTicks();
     f32 elapsed = (f32)(frame->end - frame->start);
     if (elapsed < FRAME_DURATION) {
@@ -298,7 +279,7 @@ static void loop(SDL_Renderer* renderer,
             ERROR("SDL_RenderCopy(...) < 0");
         }
         SDL_RenderPresent(renderer);
-        set_frame(player, frame);
+        set_debug(player, frame);
     }
 }
 
