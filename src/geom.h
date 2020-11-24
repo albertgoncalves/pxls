@@ -115,11 +115,11 @@ static const VerticalLine VERTICAL_LINES[] = {
     {
         .x = 24,
         .y0 = 6,
-        .y1 = 16,
+        .y1 = 27,
     },
     {
         .x = 24,
-        .y0 = 21,
+        .y0 = 31,
         .y1 = 32,
     },
     {

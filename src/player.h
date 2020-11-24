@@ -3,7 +3,7 @@
 
 #include "prelude.h"
 
-#define KEY_SENSITIVITY 0.065f;
+#define KEY_SENSITIVITY 0.0525f;
 
 typedef enum {
     DIR_UP = 0,
