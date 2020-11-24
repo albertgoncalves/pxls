@@ -291,7 +291,6 @@ i32 main(void) {
     if (!memory) {
         ERROR("!memory");
     }
-    set_colors();
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         ERROR("SDL_Init(...) < 0");
     }
