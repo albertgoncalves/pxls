@@ -195,16 +195,20 @@ static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
 static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
                        u8      mask[PX_HEIGHT][PX_WIDTH],
                        Player* player) {
-    for (u32 i = 0; i < PX_HEIGHT; ++i) {
-        for (u32 j = 0; j < PX_WIDTH; ++j) {
-            if ((mask[i][j] & MASK_WALL) && (mask[i][j] & MASK_PLAYER)) {
+    for (u8 i = 0; i < PX_HEIGHT; ++i) {
+        for (u8 j = 0; j < PX_WIDTH; ++j) {
+            if (mask[i][j] & MASK_WALL) {
                 buffer[i][j].pack = COLOR_WALL.pack;
-            } else if (mask[i][j] & MASK_WALL) {
-                buffer[i][j].pack = COLOR_WALL_SHADOW.pack;
-            } else if (mask[i][j] & MASK_PLAYER) {
-                buffer[i][j].pack = COLOR_EMPTY.pack;
             } else {
-                buffer[i][j].pack = COLOR_EMPTY_SHADOW.pack;
+                buffer[i][j].pack = COLOR_EMPTY.pack;
+            }
+            if (mask[i][j] & MASK_PLAYER) {
+                buffer[i][j].rgb.red =
+                    (u8)(buffer[i][j].rgb.red + COLOR_LIGHT.rgb.red);
+                buffer[i][j].rgb.green =
+                    (u8)(buffer[i][j].rgb.green + COLOR_LIGHT.rgb.green);
+                buffer[i][j].rgb.blue =
+                    (u8)(buffer[i][j].rgb.blue + COLOR_LIGHT.rgb.blue);
             }
         }
     }
