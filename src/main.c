@@ -340,7 +340,9 @@ i32 main(void) {
     if (!texture) {
         ERROR("!texture");
     }
+    SDL_ShowCursor(FALSE);
     loop(renderer, texture, memory);
+    SDL_ShowCursor(TRUE);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
