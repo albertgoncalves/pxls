@@ -24,7 +24,7 @@ typedef struct {
     u16 control_counter;
 } Player;
 
-static Direction get_direction(Player* player) {
+static Direction get_direction(const Player* player) {
     u16       max = 0;
     Direction direction = DIR_NONE;
     for (u8 i = 0; i < DIR_COUNT; ++i) {

@@ -159,13 +159,13 @@ static const u8 VERTICAL_LINES_COUNT =
 
 static void init_mask(u8 mask[PX_HEIGHT][PX_WIDTH]) {
     for (u8 i = 0; i < HORIZONTAL_LINES_COUNT; ++i) {
-        HorizontalLine line = HORIZONTAL_LINES[i];
+        const HorizontalLine line = HORIZONTAL_LINES[i];
         for (u8 x = line.x0; x < line.x1; ++x) {
             mask[line.y][x] |= MASK_WALL;
         }
     }
     for (u8 i = 0; i < VERTICAL_LINES_COUNT; ++i) {
-        VerticalLine line = VERTICAL_LINES[i];
+        const VerticalLine line = VERTICAL_LINES[i];
         for (u8 y = line.y0; y < line.y1; ++y) {
             mask[y][line.x] |= MASK_WALL;
         }
@@ -178,23 +178,23 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
     }
     f32 next_start = octal.slope_start;
     for (i16 i = octal.loop_start; i <= octal.radius; ++i) {
-        Bool prev_blocked = FALSE;
-        Bool visible = FALSE;
-        i16  y_delta = (i16)(i * octal.y_sign);
-        i16  y_delta_squared = (i16)(y_delta * y_delta);
-        i16  y = (i16)(octal.y + y_delta);
+        Bool      prev_blocked = FALSE;
+        Bool      visible = FALSE;
+        const i16 y_delta = (i16)(i * octal.y_sign);
+        const i16 y_delta_squared = (i16)(y_delta * y_delta);
+        const i16 y = (i16)(octal.y + y_delta);
         for (i16 j = i; 0 <= j; --j) {
-            f32 l_slope = (j - SHADOW_APERTURE) / (i + SHADOW_APERTURE);
+            const f32 l_slope = (j - SHADOW_APERTURE) / (i + SHADOW_APERTURE);
             if (octal.slope_start < l_slope) {
                 continue;
             }
-            f32 r_slope = (j + SHADOW_APERTURE) / (i - SHADOW_APERTURE);
+            const f32 r_slope = (j + SHADOW_APERTURE) / (i - SHADOW_APERTURE);
             if (r_slope < octal.slope_end) {
                 break;
             }
-            i16  x_delta = (i16)(j * octal.x_sign);
-            i16  x = (i16)(octal.x + x_delta);
-            Bool in_bounds =
+            const i16  x_delta = (i16)(j * octal.x_sign);
+            const i16  x = (i16)(octal.x + x_delta);
+            const Bool in_bounds =
                 (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT);
             if (in_bounds &&
                 (((x_delta * x_delta) + y_delta_squared) <
@@ -203,7 +203,7 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
                 mask[y][x] |= (u8)octal.mask;
                 visible = TRUE;
             }
-            Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
+            const Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
             if (prev_blocked && blocked) {
                 next_start = l_slope;
                 continue;
@@ -212,17 +212,18 @@ static void set_mask_col_row(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
                 octal.slope_start = next_start;
             } else if (blocked && (i < octal.radius)) {
                 {
-                    Octal next_octal;
-                    next_octal.slope_start = next_start;
-                    next_octal.slope_end = r_slope;
-                    next_octal.x = octal.x;
-                    next_octal.y = octal.y;
-                    next_octal.loop_start = (i16)(i + 1);
-                    next_octal.radius = octal.radius;
-                    next_octal.radius_squared = octal.radius_squared;
-                    next_octal.x_sign = octal.x_sign;
-                    next_octal.y_sign = octal.y_sign;
-                    next_octal.mask = octal.mask;
+                    const Octal next_octal = {
+                        .slope_start = next_start,
+                        .slope_end = r_slope,
+                        .x = octal.x,
+                        .y = octal.y,
+                        .loop_start = (i16)(i + 1),
+                        .radius = octal.radius,
+                        .radius_squared = octal.radius_squared,
+                        .x_sign = octal.x_sign,
+                        .y_sign = octal.y_sign,
+                        .mask = octal.mask,
+                    };
                     set_mask_col_row(mask, next_octal);
                 }
                 prev_blocked = TRUE;
@@ -241,23 +242,23 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
     }
     f32 next_start = octal.slope_start;
     for (i16 j = octal.loop_start; j <= octal.radius; ++j) {
-        Bool prev_blocked = FALSE;
-        Bool visible = FALSE;
-        i16  x_delta = (i16)(j * octal.x_sign);
-        i16  x_delta_squared = (i16)(x_delta * x_delta);
-        i16  x = (i16)(octal.x + x_delta);
+        Bool      prev_blocked = FALSE;
+        Bool      visible = FALSE;
+        const i16 x_delta = (i16)(j * octal.x_sign);
+        const i16 x_delta_squared = (i16)(x_delta * x_delta);
+        const i16 x = (i16)(octal.x + x_delta);
         for (i16 i = j; 0 <= i; --i) {
-            f32 l_slope = (i - SHADOW_APERTURE) / (j + SHADOW_APERTURE);
+            const f32 l_slope = (i - SHADOW_APERTURE) / (j + SHADOW_APERTURE);
             if (octal.slope_start < l_slope) {
                 continue;
             }
-            f32 r_slope = (i + SHADOW_APERTURE) / (j - SHADOW_APERTURE);
+            const f32 r_slope = (i + SHADOW_APERTURE) / (j - SHADOW_APERTURE);
             if (r_slope < octal.slope_end) {
                 break;
             }
-            i16  y_delta = (i16)(i * octal.y_sign);
-            i16  y = (i16)(octal.y + y_delta);
-            Bool in_bounds =
+            const i16  y_delta = (i16)(i * octal.y_sign);
+            const i16  y = (i16)(octal.y + y_delta);
+            const Bool in_bounds =
                 (0 <= x) && (x < PX_WIDTH) && (0 <= y) && (y < PX_HEIGHT);
             if (in_bounds &&
                 ((x_delta_squared + (y_delta * y_delta)) <
@@ -266,7 +267,7 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
                 mask[y][x] |= (u8)octal.mask;
                 visible = TRUE;
             }
-            Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
+            const Bool blocked = (!in_bounds) || (mask[y][x] & MASK_WALL);
             if (prev_blocked && blocked) {
                 next_start = l_slope;
                 continue;
@@ -275,17 +276,18 @@ static void set_mask_row_col(u8 mask[PX_HEIGHT][PX_WIDTH], Octal octal) {
                 octal.slope_start = next_start;
             } else if (blocked && (j < octal.radius)) {
                 {
-                    Octal next_octal;
-                    next_octal.slope_start = next_start;
-                    next_octal.slope_end = r_slope;
-                    next_octal.x = octal.x;
-                    next_octal.y = octal.y;
-                    next_octal.loop_start = (i16)(j + 1);
-                    next_octal.radius = octal.radius;
-                    next_octal.radius_squared = octal.radius_squared;
-                    next_octal.x_sign = octal.x_sign;
-                    next_octal.y_sign = octal.y_sign;
-                    next_octal.mask = octal.mask;
+                    const Octal next_octal = {
+                        .slope_start = next_start,
+                        .slope_end = r_slope,
+                        .x = octal.x,
+                        .y = octal.y,
+                        .loop_start = (i16)(j + 1),
+                        .radius = octal.radius,
+                        .radius_squared = octal.radius_squared,
+                        .x_sign = octal.x_sign,
+                        .y_sign = octal.y_sign,
+                        .mask = octal.mask,
+                    };
                     set_mask_row_col(mask, next_octal);
                 }
                 prev_blocked = TRUE;

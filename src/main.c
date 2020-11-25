@@ -143,7 +143,7 @@ static u8 MASK_RESET[16] = {
 static const i16 PLAYER_SHADOW_RADIUS_SQUARED =
     PLAYER_SHADOW_RADIUS * PLAYER_SHADOW_RADIUS;
 
-static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
+static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], const Player* player) {
     {
         // NOTE: `PX_WIDTH_BY_HEIGHT` *must* to be divisible by 16.
         u8* pointer = &mask[0][0];
@@ -153,8 +153,8 @@ static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
                                           *(Simd4i32*)&MASK_RESET[0]));
         }
     }
-    i16 x = (i16)player->x;
-    i16 y = (i16)player->y;
+    const i16 x = (i16)player->x;
+    const i16 y = (i16)player->y;
     mask[y][x] &= MASK_PLAYER;
     Octal octal = {
         .slope_start = 1.0f,
@@ -192,9 +192,9 @@ static void set_mask(u8 mask[PX_HEIGHT][PX_WIDTH], Player* player) {
     }
 }
 
-static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
-                       u8      mask[PX_HEIGHT][PX_WIDTH],
-                       Player* player) {
+static void set_buffer(Pixel         buffer[PX_HEIGHT][PX_WIDTH],
+                       u8            mask[PX_HEIGHT][PX_WIDTH],
+                       const Player* player) {
     for (u8 i = 0; i < PX_HEIGHT; ++i) {
         for (u8 j = 0; j < PX_WIDTH; ++j) {
             if (mask[i][j] & MASK_WALL) {
@@ -215,9 +215,9 @@ static void set_buffer(Pixel   buffer[PX_HEIGHT][PX_WIDTH],
     buffer[(u8)player->y][(u8)player->x].pack = COLOR_PLAYER.pack;
 }
 
-static void set_debug(Player* player, Frame* frame) {
+static void set_debug(const Player* player, Frame* frame) {
     frame->end = SDL_GetTicks();
-    f32 elapsed = (f32)(frame->end - frame->start);
+    const f32 elapsed = (f32)(frame->end - frame->start);
     if (elapsed < FRAME_DURATION) {
         SDL_Delay((u32)(FRAME_DURATION - elapsed));
     }
