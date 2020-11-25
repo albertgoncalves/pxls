@@ -264,7 +264,7 @@ static void loop(SDL_Renderer* renderer,
     for (;;) {
         frame->start = SDL_GetTicks();
         set_input(player, dead);
-        if (memory->dead) {
+        if (*dead) {
             return;
         }
         update_frame(memory->mask, player, frame);
