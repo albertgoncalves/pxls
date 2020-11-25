@@ -24,7 +24,7 @@ static const Pixel COLOR_WALL = {
     .rgb = {.red = 30, .green = 35, .blue = 50},
 };
 static const Pixel COLOR_LIGHT = {
-    .rgb = {.red = 50, .green = 50, .blue = 55},
+    .rgb = {.red = 60, .green = 40, .blue = 45},
 };
 
 #endif
