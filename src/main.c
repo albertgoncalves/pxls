@@ -99,7 +99,9 @@ static void set_input(Player* player, Bool* dead) {
             break;
         }
         }
-        if (*((u64*)&player->control[0]) == 0) {
+        if (!(player->control[0] | player->control[1] | player->control[2] |
+              player->control[3]))
+        {
             player->control_counter = 0;
         }
     }
