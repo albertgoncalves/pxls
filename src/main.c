@@ -8,7 +8,6 @@
 
 typedef struct {
     u32 start;
-    u32 end;
     u32 prev;
     u32 delta;
     u32 fps_start;
@@ -218,8 +217,8 @@ static void set_buffer(Pixel         buffer[PX_HEIGHT][PX_WIDTH],
 }
 
 static void set_debug(const Player* player, Frame* frame) {
-    frame->end = SDL_GetTicks();
-    const f32 elapsed = (f32)(frame->end - frame->start);
+    u32       now = SDL_GetTicks();
+    const f32 elapsed = (f32)(now - frame->start);
     if (elapsed < FRAME_DURATION) {
         SDL_Delay((u32)(FRAME_DURATION - elapsed));
     }
@@ -233,7 +232,7 @@ static void set_debug(const Player* player, Frame* frame) {
                "player.control.down  :%6hu\n"
                "player.control.left  :%6hu\n"
                "player.control.right :%6hu\n",
-               (f32)frame->fps_count / (f32)(frame->end - frame->fps_start) *
+               ((f32)frame->fps_count / (f32)(now - frame->fps_start)) *
                    MILLISECONDS,
                (f32)frame->update_count / (f32)FRAME_DEBUG_INTERVAL,
                player->x,
