@@ -47,9 +47,6 @@ now () {
 
 (
     start=$(now)
-    for x in "$WD"/src/*.h; do
-        cppcheck "$x" | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
-    done
     cppcheck \
         --enable=all \
         --suppress=missingIncludeSystem \
